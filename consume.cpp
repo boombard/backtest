@@ -35,20 +35,19 @@ Valuations read_historical (string filename) {
       ++file_length;
     }
     cout << "File length: " << file_length << endl;
-    data.data.resize(file_length);
+    data.index.resize(file_length);
+    data.values.resize(file_length);
     file_handle.clear();
     file_handle.seekg(0, ios::beg);
     int line_number = 0;
     while (getline(file_handle, line)) {
       if (line_number != 0) {
-        DataPoint point = {};
         vector<string> elements = splitline(line, ',');
         istringstream timepoint(elements[0]);
-        timepoint >> get_time(&point.time, "%Y-%m-%d %H:%M:%S UTC");
+        timepoint >> get_time(&data.index[line_number], "%Y-%m-%d %H:%M:%S UTC");
         istringstream value(elements[1]);
-        value >> point.value;
+        value >> data.values[line_number];
         // double value = atof(elements[1].c_str());
-        data.data[line_number] = point;
       }
       ++line_number;
     }

@@ -10,8 +10,8 @@ using namespace std;
 
 void Valuations::print () {
   int i;
-  for (i = 0; i < data.size(); i++) {
-    cout << put_time(&data[i].time, "%Y-%m-%d") << ", " << data[i].value << endl;
+  for (i = 0; i < index.size(); i++) {
+    cout << put_time(&index[i], "%Y-%m-%d") << ", " << values[i] << endl;
   }
 }
 
@@ -21,33 +21,27 @@ Valuations Valuations::query (string begin, string end) {
   return result;
 }
 
-vector<double> Valuations::get_values() {
+double Valuations::apply(vector<Command> commands) {
+  double returns = 0.0;
+  double bought = 0.0;
   int i;
-  vector<double> result;
-  result.resize(data.size());
-  for (i = 0; i < data.size(); i++) {
-    result[i] = data[i].value;
+  for (i = 0; i < commands.size(); i++) {
+    if (commands[i].cmd == 'b') {
+      bought = values[commands[i].index];
+    }
+    else if (commands[i].cmd == 's') {
+      double profit = values[commands[i].index] - bought;
+      returns += profit;
+      bought = 0.0;
+    }
   }
-
-  return result;
+  return returns;
 }
 
-vector<tm> Valuations::get_index() {
-  int i;
-  vector<tm> result;
-  result.resize(data.size());
-  for (i = 0; i < data.size(); i++) {
-    result[i] = data[i].time;
-  }
-
-  return result;
-}
-
-
-Bollinger moving_average (Valuations vals, int interval) {
+Bollinger moving_average (Valuations vals, int interval, double K) {
 
   Bollinger result;
-  vector<double> values = vals.get_values();
+  vector<double> values = vals.values;
   result.mean.resize(values.size());
   result.upper_sd.resize(values.size());
   result.lower_sd.resize(values.size());
@@ -72,12 +66,12 @@ Bollinger moving_average (Valuations vals, int interval) {
     }
     double sum = accumulate(begin_ptr, &values[i + 1], 0.0);
     double mean = sum / denominator;
-    double sq_sum;
+    double sq_sum = 0.0;
     int k;
     for (k = begin; k < i; k++) {
       sq_sum += pow((values[k] - mean), 2.0);
     }
-    double stdev = sqrt(sq_sum / (interval - 1));
+    double stdev = K * sqrt(sq_sum / (denominator - 1));
     result.mean[i] = mean;
     result.upper_sd[i] = mean + stdev;
     result.lower_sd[i] = mean - stdev;
@@ -85,4 +79,31 @@ Bollinger moving_average (Valuations vals, int interval) {
   }
 
   return result;
+}
+
+vector<Command> bollinger_buy_sell (Bollinger boll, Valuations vals) {
+  int i;
+  char state = 'n';
+  vector<Command> commands;
+  for (i = 0; i <= boll.mean.size(); i++) {
+    double mean = boll.mean[i];
+    double upper = boll.upper_sd[i];
+    double lower = boll.lower_sd[i];
+    double value = vals.values[i];
+    if (value > upper) {
+      if (state == 'n') {
+        Command command = {i, 'b'};
+        commands.push_back(command);
+        state = 'b';
+      }
+    }
+    if (value < mean) {
+      if (state == 'b') {
+        Command command = {i, 's'};
+        commands.push_back(command);
+        state = 'n';
+      }
+    }
+  }
+  return commands;
 }

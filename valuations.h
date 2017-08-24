@@ -4,6 +4,11 @@
 #include <iostream>
 #include <vector>
 
+struct Command {
+  int index;
+  char cmd;
+};
+
 struct Bollinger {
   std::vector<double> mean;
   std::vector<double> upper_sd;
@@ -11,21 +16,19 @@ struct Bollinger {
   std::vector<double> stdev;
 };
 
-struct DataPoint {
-  double value;
-  std::tm time;
-};
-
 class Valuations {
   public:
-    std::vector<DataPoint> data;
+    std::vector<double> values;
+    std::vector<std::tm> index;
+    Bollinger boll;
     Valuations () {};
-    std::vector<double> get_values ();
-    std::vector<tm> get_index ();
     void print ();
     Valuations query (std::string begin, std::string end);
+    double apply(std::vector<Command>);
 };
 
-Bollinger moving_average(Valuations, int);
+std::vector<Command> bollinger_buy_sell(Bollinger, Valuations);
+
+Bollinger moving_average(Valuations, int, double K = 1.0);
 
 #endif

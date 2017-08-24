@@ -9,23 +9,17 @@ int main () {
 
   Valuations result = read_historical("data/bitcoinity_data_coinfloor.csv");
   // result.print();
-  Bollinger boll = moving_average(result, 5);
-  int length = result.data.size();
+  Bollinger boll = moving_average(result, 20, 2);
+  int length = result.index.size();
+
+  vector<Command> commands = bollinger_buy_sell(boll, result);
+
   int i;
-  for (i = length - 10; i <= length; i++) {
-    cout << boll.lower_sd[i] << endl;
+  for (i = 0; i < commands.size(); i++) {
+    cout << commands[i].index << " " << commands[i].cmd << endl;
   }
 
-  cout << "***" << endl;
-
-  for (i = length - 10; i <= length; i++) {
-    cout << boll.upper_sd[i] << endl;
-  }
-  cout << "***" << endl;
-
-  for (i = length - 10; i <= length; i++) {
-    cout << result.get_values()[i] << endl;
-  }
+  cout << "Total: " << result.apply(commands) << endl;
 
   return 0;
 }
